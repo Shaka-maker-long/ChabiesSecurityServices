@@ -1,0 +1,630 @@
+diff --git a/studio-delta-production/public/orders-cost.html b/studio-delta-production/public/orders-cost.html
+index 95ea070..30bf059 100644
+--- a/studio-delta-production/public/orders-cost.html
++++ b/studio-delta-production/public/orders-cost.html
+@@ -185,7 +185,7 @@
+         <a href="/orders/paint-shop">Paint shop</a>
+       </nav>
+       <h1>Production cost</h1>
+-      <p class="lede">Labour from shop-floor time (shift and together-time) × the hourly rate for that process. Steel is metres logged × the rate for that profile. Glass and powder coating are the actuals typed when the load is received — not estimates. Wood comes later.</p>
++      <p class="lede">Labour from shop-floor time (shift and together-time) × that person's hourly rate. Financials use one Materials column: steel + glass + powder + wood + backboard.</p>
+     </div>
+     <div class="nav-controls">
+       <span class="msg" id="status"></span>
+@@ -210,9 +210,7 @@
+       <div class="summary-grid" id="mainSummaryCards">
+         <div class="s-card"><div class="s-label">Total labour cost</div><div class="s-val" id="stat-labor">R0</div></div>
+         <div class="s-card"><div class="s-label" id="stat-profit-label">Net profit</div><div class="s-val" id="stat-profit">R0</div></div>
+-        <div class="s-card"><div class="s-label">Steel cost</div><div class="s-val" id="stat-steel">R0</div></div>
+-        <div class="s-card"><div class="s-label">Glass actual</div><div class="s-val" id="stat-glass">R0</div></div>
+-        <div class="s-card"><div class="s-label">Powder actual</div><div class="s-val" id="stat-powder">R0</div></div>
++        <div class="s-card"><div class="s-label">Materials</div><div class="s-val" id="stat-materials">R0</div></div>
+         <div class="s-card"><div class="s-label">Top performer</div><div class="s-val" id="stat-top" style="font-size:16px;">—</div></div>
+         <div class="s-card" id="warning-summary" style="display:none;border-color:#DC2626"><div class="s-label" style="color:#DC2626">Warnings</div><div class="s-val" id="stat-warnings" style="color:#DC2626;font-size:18px">0</div></div>
+       </div>
+@@ -246,13 +244,13 @@
+                   <th colspan="2">Profile</th><th colspan="2">Plate</th><th colspan="2">Tagging</th>
+                   <th colspan="2">Welding</th><th colspan="2">Grinding</th><th colspan="2">Assembly</th>
+                   <th colspan="2" style="background:#D1D5DB">Totals</th>
+-                  <th id="finHeader" colspan="6">Financials</th>
++                  <th id="finHeader" colspan="4">Financials</th>
+                 </tr>
+                 <tr>
+                   <th class="col-h">H</th><th class="col-c">C</th><th class="col-h">H</th><th class="col-c">C</th><th class="col-h">H</th><th class="col-c">C</th>
+                   <th class="col-h">H</th><th class="col-c">C</th><th class="col-h">H</th><th class="col-c">C</th><th class="col-h">H</th><th class="col-c">C</th>
+                   <th class="col-hrs">Hrs</th><th class="col-c">Cost</th>
+-                  <th class="col-money">Steel</th><th class="col-money">Glass</th><th class="col-money">Powder</th><th id="ohHeader" class="col-money">Overhead</th>
++                  <th class="col-money">Materials</th><th id="ohHeader" class="col-money">Overhead</th>
+                   <th class="col-money">Sale</th><th id="profitHeader" class="col-money">PROFIT</th>
+                 </tr>
+               </thead>
+@@ -291,12 +289,12 @@
+         <div class="rates">
+           <section class="card">
+             <h2>Labour rates</h2>
+-            <p class="hint">R per hour by shop process. Time on an order uses the rate for that process.</p>
++            <p class="hint">R per hour by person. Time on an order uses that person's rate, not the process.</p>
+             <div id="labourList"></div>
+             <form class="add" id="labourForm">
+-              <label>Process
+-                <select id="labourProcess"></select>
+-                <input id="labourProcessCustom" placeholder="Or type another process">
++              <label>Person
++                <select id="labourPerson"></select>
++                <input id="labourPersonCustom" placeholder="Or type another name">
+               </label>
+               <label>Rate per hour (R)
+                 <input id="labourRate" inputmode="decimal" required placeholder="e.g. 180">
+@@ -430,7 +428,7 @@
+       let rows = o.materialEntries || [];
+       if (month) rows = rows.filter((m) => m.month === month);
+       if (type) rows = rows.filter((m) => m.type === type);
+-      const label = type === "glass" ? "GLASS ACTUAL" : type === "powder" ? "POWDER ACTUAL" : type === "steel" ? "STEEL" : "MATERIALS";
++      const label = type === "glass" ? "GLASS ACTUAL" : type === "powder" ? "POWDER ACTUAL" : type === "steel" ? "STEEL" : type === "wood" ? "WOOD" : type === "backboard" ? "BACKBOARD" : "MATERIALS";
+       let html = orderHeader(o) + "<strong>" + label + "</strong><hr style='border:0;border-top:1px solid #4B5563;margin:6px 0'>";
+       if (!rows.length) html += "<div>No " + (type || "material") + " actual yet</div>";
+       rows.forEach((m) => {
+@@ -448,22 +446,20 @@
+       document.getElementById("profitHeader").textContent = includeOH ? "PROFIT" : "GROSS MARGIN";
+       document.getElementById("stat-profit-label").textContent = includeOH ? "Net profit" : "Gross margin";
+       document.getElementById("ohHeader").style.display = includeOH ? "" : "none";
+-      document.getElementById("finHeader").setAttribute("colspan", includeOH ? "6" : "5");
++      document.getElementById("finHeader").setAttribute("colspan", includeOH ? "4" : "3");
+       const metaBody = document.getElementById("logMetaBody");
+       const body = document.getElementById("logBody");
+       const orders = appData.orders || [];
+       if (!orders.length) {
+         metaBody.innerHTML = "";
+-        body.innerHTML = "<tr><td colspan='22' class='empty'>No labour, steel, or received glass / powder actuals in this period.</td></tr>";
++        body.innerHTML = "<tr><td colspan='20' class='empty'>No labour or materials in this period.</td></tr>";
+         document.getElementById("stat-labor").textContent = "R0";
+         document.getElementById("stat-profit").textContent = "R0";
+-        document.getElementById("stat-steel").textContent = "R0";
+-        document.getElementById("stat-glass").textContent = "R0";
+-        document.getElementById("stat-powder").textContent = "R0";
++        document.getElementById("stat-materials").textContent = "R0";
+         document.getElementById("stat-top").textContent = "—";
+         return;
+       }
+-      const grand = { h: 0, c: 0, m: 0, g: 0, pw: 0, oh: 0, s: 0, p: 0 };
++      const grand = { h: 0, c: 0, m: 0, oh: 0, s: 0, p: 0 };
+       metaBody.innerHTML = orders.map((o) => {
+         return "<tr><td class='col-order'><b>" + esc(o.orderNum) + "</b></td>" +
+           "<td class='col-product tooltip'><span class='product-clip'>" + esc(o.product || "—") + "</span>" +
+@@ -472,9 +468,9 @@
+       body.innerHTML = orders.map((o) => {
+         const ohCost = includeOH ? (o.overheadCost || 0) : 0;
+         const sale = o.displaySale != null ? o.displaySale : o.sellingPrice;
+-        const margin = sale - (o.laborCost || 0) - (o.materialCost || 0) - ohCost;
+-        grand.h += o.totalHours || 0; grand.c += o.laborCost || 0; grand.m += o.steelCost || 0;
+-        grand.g += o.glassCost || 0; grand.pw += o.powderCost || 0;
++        const mats = o.materialCost || 0;
++        const margin = sale - (o.laborCost || 0) - mats - ohCost;
++        grand.h += o.totalHours || 0; grand.c += o.laborCost || 0; grand.m += mats;
+         grand.oh += ohCost; grand.s += sale || 0; grand.p += margin;
+         let row = "<tr>";
+         TASKS.forEach((t) => {
+@@ -484,9 +480,7 @@
+         });
+         row += "<td class='col-hrs' style='background:#F9FAFB;font-weight:700'>" + (o.totalHours || 0).toFixed(1) + "h</td>" +
+           "<td class='col-c tooltip' style='background:#F9FAFB;font-weight:700'>" + formatMoney(o.laborCost) + "<div class='tooltiptext'>" + staffTip(o) + "</div></td>" +
+-          "<td class='col-money tooltip' style='font-weight:700'>" + formatMoney(o.steelCost || 0) + "<div class='tooltiptext'>" + materialTip(o, "", "steel") + "</div></td>" +
+-          "<td class='col-money tooltip' style='font-weight:700'>" + formatMoney(o.glassCost || 0) + "<div class='tooltiptext'>" + materialTip(o, "", "glass") + "</div></td>" +
+-          "<td class='col-money tooltip' style='font-weight:700'>" + formatMoney(o.powderCost || 0) + "<div class='tooltiptext'>" + materialTip(o, "", "powder") + "</div></td>";
++          "<td class='col-money tooltip' style='font-weight:700'>" + formatMoney(mats) + "<div class='tooltiptext'>" + materialTip(o) + "</div></td>";
+         if (includeOH) row += "<td class='col-money'>" + formatMoney(o.overheadCost) + "</td>";
+         row += "<td class='col-money' style='background:#F9FAFB;font-weight:700'>" + formatMoney(sale) + "</td>" +
+           "<td class='col-money' style='font-weight:800;background:#E5E7EB;color:" + (margin < 0 ? "#DC2626" : "inherit") + "'>" + formatMoney(margin) + "</td></tr>";
+@@ -494,9 +488,7 @@
+       }).join("");
+       document.getElementById("stat-labor").textContent = formatMoney(grand.c);
+       document.getElementById("stat-profit").textContent = formatMoney(grand.p);
+-      document.getElementById("stat-steel").textContent = formatMoney(grand.m);
+-      document.getElementById("stat-glass").textContent = formatMoney(grand.g);
+-      document.getElementById("stat-powder").textContent = formatMoney(grand.pw);
++      document.getElementById("stat-materials").textContent = formatMoney(grand.m);
+       document.getElementById("stat-top").textContent = appData.topPerformer || "—";
+       const warns = appData.warningCount || 0;
+       document.getElementById("warning-summary").style.display = warns ? "" : "none";
+@@ -529,11 +521,11 @@
+       months.forEach((m) => {
+         const label = new Date(m + "-01T12:00:00").toLocaleString("en-ZA", { month: "short", year: "numeric" });
+         tr1 += "<th colspan='" + colSpan + "'>" + label + "</th>";
+-        tr2 += "<th>Hrs</th><th>Cost</th><th>Steel</th>";
++        tr2 += "<th>Hrs</th><th>Cost</th><th>Materials</th>";
+         if (includeOH) tr2 += "<th>Overhead</th>";
+       });
+-      tr1 += "<th colspan='" + colSpan + "' style='background:#D1D5DB'>TOTALS</th><th rowspan='2'>Selling price</th><th rowspan='2'>" + (includeOH ? "PROFIT" : "MARGIN") + "</th><th rowspan='2'>40% test<br><small>(Lab+Steel)/Sale</small></th></tr>";
+-      tr2 += "<th>Hrs</th><th>Cost</th><th>Steel</th>";
++      tr1 += "<th colspan='" + colSpan + "' style='background:#D1D5DB'>TOTALS</th><th rowspan='2'>Selling price</th><th rowspan='2'>" + (includeOH ? "PROFIT" : "MARGIN") + "</th><th rowspan='2'>40% test<br><small>(Lab+Materials)/Sale</small></th></tr>";
++      tr2 += "<th>Hrs</th><th>Cost</th><th>Materials</th>";
+       if (includeOH) tr2 += "<th>Overhead</th>";
+       tr2 += "</tr>";
+       thead.innerHTML = tr1 + tr2;
+@@ -591,6 +583,7 @@
+       let total = 0;
+       (appData.orders || []).forEach((o) => {
+         (o.materialEntries || []).forEach((m) => {
++          if (m.type && m.type !== "steel") return;
+           const item = String(m.item || "Steel").toUpperCase();
+           if (!s[item]) s[item] = 0;
+           s[item] += m.cost || 0;
+@@ -618,13 +611,13 @@
+     }
+     function renderRates() {
+       const labour = (appData.labourRates && appData.labourRates.rates) || [];
+-      const processes = (appData.labourRates && appData.labourRates.processes) || TASKS;
+-      fillSelect("labourProcess", processes, "Choose process");
++      const people = (appData.labourRates && (appData.labourRates.people || appData.labourRates.processes)) || [];
++      fillSelect("labourPerson", people, "Choose person");
+       document.getElementById("labourList").innerHTML = labour.length
+-        ? "<table><thead><tr><th>Process</th><th>Rate</th><th></th></tr></thead><tbody>" +
+-          labour.map((r) => "<tr><td>" + esc(r.process) + "</td><td>" + esc(r.rateLabel) + "</td><td><button class='danger' type='button' data-labour=\"" + esc(r.process) + "\">Delete</button></td></tr>").join("") +
++        ? "<table><thead><tr><th>Person</th><th>Rate</th><th></th></tr></thead><tbody>" +
++          labour.map((r) => "<tr><td>" + esc(r.person || r.process) + "</td><td>" + esc(r.rateLabel) + "</td><td><button class='danger' type='button' data-labour=\"" + esc(r.person || r.process) + "\">Delete</button></td></tr>").join("") +
+           "</tbody></table>"
+-        : "<div class='empty'>No labour rates yet. Add the hourly rate for each process.</div>";
++        : "<div class='empty'>No labour rates yet. Add the hourly rate for each person.</div>";
+       document.querySelectorAll("[data-labour]").forEach((btn) => {
+         btn.onclick = () => removeLabour(btn.getAttribute("data-labour"));
+       });
+@@ -680,9 +673,9 @@
+       renderAll();
+       setMsg("status", (j.orders || []).length + " order" + ((j.orders || []).length === 1 ? "" : "s"));
+     }
+-    async function removeLabour(process) {
++    async function removeLabour(person) {
+       if (!confirm("Delete this labour rate?")) return;
+-      const r = await sdOfficeFetch("/api/office/labour-rates/" + encodeURIComponent(process), { method: "DELETE" });
++      const r = await sdOfficeFetch("/api/office/labour-rates/" + encodeURIComponent(person), { method: "DELETE" });
+       const j = await r.json();
+       if (!j.ok) { setMsg("labourMsg", j.error || "Could not delete", true); return; }
+       appData.labourRates = j;
+@@ -700,14 +693,14 @@
+     }
+     document.getElementById("labourForm").onsubmit = async (e) => {
+       e.preventDefault();
+-      const process = String(document.getElementById("labourProcessCustom").value || "").trim() || document.getElementById("labourProcess").value;
++      const person = String(document.getElementById("labourPersonCustom").value || "").trim() || document.getElementById("labourPerson").value;
+       const ratePerHour = document.getElementById("labourRate").value;
+-      const r = await sdOfficeFetch("/api/office/labour-rates", { method: "POST", body: JSON.stringify({ process, ratePerHour }) });
++      const r = await sdOfficeFetch("/api/office/labour-rates", { method: "POST", body: JSON.stringify({ person, ratePerHour }) });
+       const j = await r.json();
+       if (!j.ok) { setMsg("labourMsg", j.error || "Could not save", true); return; }
+-      document.getElementById("labourProcessCustom").value = "";
++      document.getElementById("labourPersonCustom").value = "";
+       document.getElementById("labourRate").value = "";
+-      setMsg("labourMsg", "Saved " + process + ".");
++      setMsg("labourMsg", "Saved " + person + ".");
+       load();
+     };
+     document.getElementById("steelForm").onsubmit = async (e) => {
+diff --git a/studio-delta-production/server/office-nav.test.js b/studio-delta-production/server/office-nav.test.js
+index f362fd2..a403f03 100644
+--- a/studio-delta-production/server/office-nav.test.js
++++ b/studio-delta-production/server/office-nav.test.js
+@@ -517,11 +517,12 @@ assert.ok(officeJs.indexOf("clearSteelUsage") !== -1);
+ assert.ok(officeJs.indexOf("clearProductionLogs") !== -1);
+ assert.ok(costHtml.indexOf("Monthly order matrix") !== -1);
+ assert.ok(costHtml.indexOf("Steel cost") !== -1);
+-assert.ok(costHtml.indexOf("Glass actual") !== -1);
+-assert.ok(costHtml.indexOf("Powder actual") !== -1);
+-assert.ok(costHtml.indexOf("not estimates") !== -1);
+-assert.ok(costHtml.indexOf("o.glassCost") !== -1);
+-assert.ok(costHtml.indexOf("o.powderCost") !== -1);
++assert.ok(costHtml.indexOf(">Materials</th>") !== -1 || costHtml.indexOf("Materials</th>") !== -1);
++assert.ok(costHtml.indexOf("one Materials column") !== -1);
++assert.ok(costHtml.indexOf("that person's hourly rate") !== -1);
++assert.ok(costHtml.indexOf("stat-materials") !== -1);
++assert.ok(costHtml.indexOf("labourPerson") !== -1);
++assert.ok(costHtml.indexOf("Choose person") !== -1);
+ assert.ok(costHtml.indexOf("Labour rates") !== -1);
+ assert.ok(toOrderHtml.indexOf("/orders/cost") !== -1);
+ assert.ok(officeJs.indexOf("/api/office/glass-po/:poId/pdf") !== -1);
+diff --git a/studio-delta-production/server/production-cost.js b/studio-delta-production/server/production-cost.js
+index 3c63bcd..785eee3 100644
+--- a/studio-delta-production/server/production-cost.js
++++ b/studio-delta-production/server/production-cost.js
+@@ -4,10 +4,29 @@ const { getBook, persistWorkbook } = require("./workbook-store");
+ const { listOrders, parseMoney, money, formatRand } = require("./db");
+ const catalog = require("./product-catalog");
+ const steelRates = require("./steel-rates");
+-const { FLOOR_TASKS } = require("./staff");
++const staff = require("./staff");
++const { FLOOR_TASKS } = staff;
+ 
+ const TASKS = ["Profile Cutting", "Plate Cutting", "Tagging", "Welding", "Grinding", "Assembly"];
+ const OVERHEAD_PCT = 0.4;
++const PERSON_LABOUR_RATES = [
++  { person: "Willard", ratePerHour: 110 },
++  { person: "John", ratePerHour: 65.16 },
++  { person: "Admire", ratePerHour: 49.41 },
++  { person: "Uriah", ratePerHour: 32.97 },
++  { person: "Sam", ratePerHour: 46.16 },
++  { person: "Thabile", ratePerHour: 39.56 }
++];
++const PROCESS_RATE_NAMES = {};
++TASKS.concat(FLOOR_TASKS).forEach((name) => { PROCESS_RATE_NAMES[String(name).toLowerCase()] = true; });
++
++function isProcessRateName(name) {
++  return !!PROCESS_RATE_NAMES[String(name || "").trim().toLowerCase()];
++}
++
++function personKey(name) {
++  return String(name || "").trim().toLowerCase();
++}
+ 
+ function sastYmd(date) {
+   if (!date || isNaN(date.getTime())) return "";
+@@ -73,74 +92,106 @@ function matchTask(task) {
+   return TASKS.find((name) => s.indexOf(name.toLowerCase().split(" ")[0]) !== -1) || "";
+ }
+ 
+-function readLabourRates() {
++function labourRateSheet() {
+   const book = getBook();
+   let sheet = book.getSheetByName("Rates");
+   if (!sheet) {
+     sheet = book.insertSheet("Rates");
+-    sheet.appendRow(["Process", "Rate"]);
++    sheet.appendRow(["Person", "Rate"]);
+     persistWorkbook();
++    return sheet;
+   }
+-  const byProcess = {};
++  const header = String((sheet.getLastRow() >= 1 ? sheet.getRange(1, 1).getValue() : "") || "").trim().toLowerCase();
++  if (header === "process" || header === "") {
++    sheet.getRange(1, 1).setValue("Person");
++    sheet.getRange(1, 2).setValue("Rate");
++    persistWorkbook();
++  }
++  return sheet;
++}
++
++function readLabourRates() {
++  const sheet = labourRateSheet();
++  const byPerson = {};
+   const rows = [];
+   if (sheet.getLastRow() >= 2) {
+     sheet.getRange(2, 1, sheet.getLastRow() - 1, 2).getValues().forEach((row, i) => {
+-      const process = String(row[0] || "").trim();
+-      if (!process) return;
++      const person = String(row[0] || "").trim();
++      if (!person) return;
+       const rate = parseMoney(row[1]);
+-      byProcess[process.toLowerCase()] = Number.isFinite(rate) ? rate : 0;
++      byPerson[personKey(person)] = Number.isFinite(rate) ? rate : 0;
+       rows.push({
+         id: "lrate_" + (i + 2),
+-        process,
++        person,
++        process: person,
+         ratePerHour: money(rate || 0),
+         rateLabel: formatRand(rate || 0) + " / h",
+         row: i + 2
+       });
+     });
+   }
+-  return { byProcess, rows };
++  return { byPerson, rows };
++}
++
++function listLabourPeople(rateRows) {
++  const names = PERSON_LABOUR_RATES.map((row) => row.person);
++  (rateRows || []).forEach((row) => {
++    const person = row.person || row.process;
++    if (person && !isProcessRateName(person) && names.indexOf(person) === -1) names.push(person);
++  });
++  try {
++    staff.listUsers().forEach((user) => {
++      if (!user || !user.name) return;
++      if (String(user.access || "").toLowerCase() === "production" || (user.tasks && user.tasks.length)) {
++        if (names.indexOf(user.name) === -1) names.push(user.name);
++      }
++    });
++  } catch (e) {}
++  return names;
+ }
+ 
+ function snapshotLabourRates() {
++  ensureDefaultPersonRates();
+   const { rows } = readLabourRates();
+-  const known = {};
+-  rows.forEach((row) => { known[row.process] = true; });
+-  const processes = TASKS.slice();
+-  FLOOR_TASKS.forEach((name) => { if (processes.indexOf(name) === -1) processes.push(name); });
+-  rows.forEach((row) => { if (processes.indexOf(row.process) === -1) processes.push(row.process); });
+-  return { rates: rows, processes };
++  const rates = rows.filter((row) => !isProcessRateName(row.person));
++  const people = listLabourPeople(rates);
++  return { rates, people, processes: people };
++}
++
++function ensureDefaultPersonRates() {
++  const { byPerson } = readLabourRates();
++  PERSON_LABOUR_RATES.forEach((row) => {
++    if (byPerson[personKey(row.person)] == null) {
++      upsertLabourRate({ person: row.person, ratePerHour: row.ratePerHour });
++    }
++  });
+ }
+ 
+ function upsertLabourRate(body) {
+-  const process = String((body && body.process) || "").trim();
+-  if (!process) throw new Error("Process is required.");
++  const person = String((body && (body.person || body.process)) || "").trim();
++  if (!person) throw new Error("Person is required.");
+   if (body == null || body.ratePerHour === "" || body.ratePerHour == null) {
+     throw new Error("Hourly rate is required.");
+   }
+   const rate = parseMoney(body.ratePerHour);
+   if (!Number.isFinite(rate) || rate < 0) throw new Error("Hourly rate must be 0 or more.");
+-  const book = getBook();
+-  let sheet = book.getSheetByName("Rates");
+-  if (!sheet) {
+-    sheet = book.insertSheet("Rates");
+-    sheet.appendRow(["Process", "Rate"]);
+-  }
++  const sheet = labourRateSheet();
+   if (sheet.getLastRow() >= 2) {
+     const grid = sheet.getRange(2, 1, sheet.getLastRow() - 1, 1).getValues();
+     for (let i = 0; i < grid.length; i++) {
+-      if (String(grid[i][0] || "").trim().toLowerCase() === process.toLowerCase()) {
+-        sheet.getRange(i + 2, 1).setValue(process);
++      if (personKey(grid[i][0]) === personKey(person)) {
++        sheet.getRange(i + 2, 1).setValue(person);
+         sheet.getRange(i + 2, 2).setValue(Number(money(rate)));
+         persistWorkbook();
+         try { require("./gas").clearShopCache(); } catch (e) {}
+-        return { process, ratePerHour: money(rate) };
++        return { person, process: person, ratePerHour: money(rate) };
+       }
+     }
+   }
+-  sheet.appendRow([process, Number(money(rate))]);
++  sheet.appendRow([person, Number(money(rate))]);
+   persistWorkbook();
+   try { require("./gas").clearShopCache(); } catch (e) {}
+-  return { process, ratePerHour: money(rate) };
++  return { person, process: person, ratePerHour: money(rate) };
+ }
+ 
+ function deleteLabourRate(process) {
+@@ -192,11 +243,9 @@ function clearFinishedProductionLogs() {
+   return clearProductionLogs();
+ }
+ 
+-function hourlyRate(byProcess, role, task) {
+-  const keys = [role, task, matchTask(task)].filter(Boolean).map((s) => String(s).toLowerCase());
+-  for (let i = 0; i < keys.length; i++) {
+-    if (byProcess[keys[i]] != null) return byProcess[keys[i]];
+-  }
++function hourlyRate(byPerson, worker) {
++  const key = personKey(worker);
++  if (key && byPerson[key] != null) return byPerson[key];
+   return 0;
+ }
+ 
+@@ -216,6 +265,43 @@ function readSteelUsage() {
+   }).filter((row) => row.orderNum);
+ }
+ 
++function readBackboardUsage() {
++  const sheet = getBook().getSheetByName("Backboard_Usage");
++  if (!sheet || sheet.getLastRow() < 2) return [];
++  return sheet.getRange(2, 1, sheet.getLastRow() - 1, 6).getValues().map((row) => {
++    const ts = row[0] ? new Date(row[0]) : null;
++    return {
++      timestamp: ts && !isNaN(ts.getTime()) ? ts : null,
++      orderNum: String(row[1] || "").trim(),
++      worker: String(row[2] || "").trim(),
++      process: String(row[3] || "").trim(),
++      type: String(row[4] || "").trim(),
++      size: row[5]
++    };
++  }).filter((row) => row.orderNum);
++}
++
++function addWoodActuals(order) {
++  const sheet = getBook().getSheetByName("Wood_To_Order");
++  if (!sheet || sheet.getLastRow() < 2) return;
++  const lastCol = Math.max(sheet.getLastColumn(), 11);
++  sheet.getRange(2, 1, sheet.getLastRow() - 1, lastCol).getValues().forEach((row) => {
++    const orderNum = String(row[2] || "").trim();
++    if (!orderNum) return;
++    const cost = parseMoney(row[11]);
++    if (!(cost > 0)) return;
++    const ts = row[1] ? new Date(row[1]) : null;
++    const month = ts && !isNaN(ts.getTime()) ? monthKey(ts) : "unknown";
++    addMaterial(order(orderNum), {
++      type: "wood",
++      item: [row[5], row[6]].filter(Boolean).join(" ") || "Wood",
++      qty: [row[7], row[8]].filter(Boolean).join(" × ") + (row[9] ? " × " + row[9] : ""),
++      cost,
++      month
++    });
++  });
++}
++
+ function orderMeta() {
+   const byId = {};
+   listOrders().forEach((order) => {
+@@ -245,6 +331,8 @@ function emptyOrder(id, meta) {
+     materialCost: 0,
+     glassCost: 0,
+     powderCost: 0,
++    woodCost: 0,
++    backboardCost: 0,
+     materialEntries: [],
+     tasks,
+     staff: {},
+@@ -273,6 +361,8 @@ function addMaterial(rec, entry) {
+   rec.materialCost += entry.cost;
+   if (entry.type === "glass") rec.glassCost += entry.cost;
+   if (entry.type === "powder") rec.powderCost += entry.cost;
++  if (entry.type === "wood") rec.woodCost += entry.cost;
++  if (entry.type === "backboard") rec.backboardCost += entry.cost;
+   if (entry.month && entry.month !== "unknown") {
+     rec.monthMaterials[entry.month] = (rec.monthMaterials[entry.month] || 0) + entry.cost;
+   }
+@@ -320,7 +410,8 @@ function addPowderActuals(order) {
+ async function getAppData(query) {
+   const q = query || {};
+   const range = parseFilterRange(q.mode, q.from || q.value, q.to || q.end);
+-  const { byProcess } = readLabourRates();
++  ensureDefaultPersonRates();
++  const { byPerson } = readLabourRates();
+   const meta = orderMeta();
+   const byId = {};
+ 
+@@ -337,7 +428,7 @@ async function getAppData(query) {
+     const hours = (Number(log.minutes) || 0) / 60;
+     if (!(hours > 0)) return;
+     const month = monthKey(start);
+-    const rate = hourlyRate(byProcess, log.role, log.task);
++    const rate = hourlyRate(byPerson, log.worker);
+     const cost = hours * rate;
+     const rec = order(log.orderNum);
+     addHours(rec, month, hours, cost);
+@@ -366,8 +457,7 @@ async function getAppData(query) {
+     const ts = row.timestamp;
+     const month = ts ? monthKey(ts) : "unknown";
+     const priced = steelRates.costUsage(row.type, row.size);
+-    const rec = order(row.orderNum);
+-    rec.materialEntries.push({
++    addMaterial(order(row.orderNum), {
+       type: "steel",
+       item: row.type || "Steel",
+       qty: String(row.size == null ? "" : row.size),
+@@ -377,14 +467,26 @@ async function getAppData(query) {
+       worker: row.worker,
+       process: row.process
+     });
+-    rec.materialCost += priced.cost;
+-    if (month && month !== "unknown") {
+-      rec.monthMaterials[month] = (rec.monthMaterials[month] || 0) + priced.cost;
+-    }
++  });
++
++  readBackboardUsage().forEach((row) => {
++    const ts = row.timestamp;
++    const month = ts ? monthKey(ts) : "unknown";
++    addMaterial(order(row.orderNum), {
++      type: "backboard",
++      item: row.type || "Backboard",
++      qty: String(row.size == null ? "" : row.size),
++      cost: 0,
++      month,
++      rateMissing: true,
++      worker: row.worker,
++      process: row.process
++    });
+   });
+ 
+   addGlassActuals(order);
+   addPowderActuals(order);
++  addWoodActuals(order);
+ 
+   const startMonth = range.start ? monthKey(range.start) : "";
+ 
+@@ -472,6 +574,8 @@ async function getAppData(query) {
+       glassCost: prunedMats.filter((e) => e.type === "glass").reduce((s, e) => s + (e.cost || 0), 0),
+       powderCost: prunedMats.filter((e) => e.type === "powder").reduce((s, e) => s + (e.cost || 0), 0),
+       steelCost: prunedMats.filter((e) => e.type === "steel").reduce((s, e) => s + (e.cost || 0), 0),
++      woodCost: prunedMats.filter((e) => e.type === "wood").reduce((s, e) => s + (e.cost || 0), 0),
++      backboardCost: prunedMats.filter((e) => e.type === "backboard").reduce((s, e) => s + (e.cost || 0), 0),
+       overheadCost: displayOH,
+       materialEntries: prunedMats,
+       tasks: o.tasks,
+@@ -505,6 +609,7 @@ async function getAppData(query) {
+ module.exports = {
+   TASKS,
+   OVERHEAD_PCT,
++  PERSON_LABOUR_RATES,
+   parseFilterRange,
+   matchTask,
+   snapshotLabourRates,
+diff --git a/studio-delta-production/server/production-cost.test.js b/studio-delta-production/server/production-cost.test.js
+index 503ee31..28a22a5 100644
+--- a/studio-delta-production/server/production-cost.test.js
++++ b/studio-delta-production/server/production-cost.test.js
+@@ -36,7 +36,7 @@ db.upsertOrder({
+   price_excl_vat: "2000.00"
+ });
+ 
+-cost.upsertLabourRate({ process: "Welding", ratePerHour: "200" });
++cost.upsertLabourRate({ person: "Willard", ratePerHour: "110" });
+ steelRates.upsertRate({ type: "25x25x2", ratePerM: "80" });
+ assert.strictEqual(steelRates.costUsage("Tube - 25x25x2", 3).cost, 240);
+ 
+@@ -60,12 +60,18 @@ assert.strictEqual(cost.matchTask("Final QC"), "");
+   const order = data.orders.find((o) => o.orderNum === "S-COST-1");
+   assert.ok(order, JSON.stringify(data.orders));
+   assert.ok(Math.abs(order.totalHours - 2) < 0.05, "hours " + order.totalHours);
+-  assert.ok(Math.abs(order.laborCost - 400) < 0.05, "labour " + order.laborCost);
++  assert.ok(Math.abs(order.laborCost - 220) < 0.05, "labour " + order.laborCost);
+   assert.strictEqual(order.materialCost, 240);
+   assert.ok(order.staff.Willard);
++  assert.ok(Math.abs(order.staff.Willard.c - 220) < 0.05);
++  assert.ok(Math.abs(order.tasks.Welding.c - 220) < 0.05);
+   assert.ok(Math.abs(order.tasks.Welding.h - 2) < 0.05);
+   assert.ok(Math.abs(order.overheadCost - 800) < 0.05, "overhead " + order.overheadCost);
+   assert.strictEqual(order.sellingPrice, 2000);
++  cost.upsertLabourRate({ process: "Welding", ratePerHour: "999" });
++  const stillPerson = await cost.getAppData({ mode: "all" });
++  const stillOrder = stillPerson.orders.find((o) => o.orderNum === "S-COST-1");
++  assert.ok(Math.abs(stillOrder.laborCost - 220) < 0.05, "process rate must not replace person rate " + stillOrder.laborCost);
+ 
+   const sept = await cost.getAppData({ mode: "month", from: "2026-09" });
+   assert.ok(sept.orders.some((o) => o.orderNum === "S-COST-1"));
+@@ -94,11 +100,15 @@ assert.strictEqual(cost.matchTask("Final QC"), "");
+   const saved = await fetch(base + "/api/office/labour-rates", {
+     method: "POST",
+     headers: { "Content-Type": "application/json", "x-sd-token": session.token },
+-    body: JSON.stringify({ process: "Profile Cutting", ratePerHour: "150" })
++    body: JSON.stringify({ person: "John", ratePerHour: "65.16" })
+   });
+   const savedJson = await saved.json();
+   assert.ok(savedJson.ok, JSON.stringify(savedJson));
+-  assert.ok((savedJson.rates || []).some((r) => r.process === "Profile Cutting"));
++  assert.ok((savedJson.rates || []).some((r) => (r.person || r.process) === "John" && Math.abs(Number(r.ratePerHour) - 65.16) < 0.01));
++  const seeded = (savedJson.rates || []).map((r) => r.person || r.process);
++  ["Willard", "John", "Admire", "Uriah", "Sam", "Thabile"].forEach((name) => {
++    assert.ok(seeded.indexOf(name) !== -1, "missing labour person " + name);
++  });
+   const steel = await fetch(base + "/api/office/steel-rates", {
+     method: "POST",
+     headers: { "Content-Type": "application/json", "x-sd-token": session.token },
+@@ -127,6 +137,8 @@ assert.strictEqual(cost.matchTask("Final QC"), "");
+   });
+   const glassSheet = book.getSheetByName("Glass_To_Order");
+   glassSheet.appendRow(["g-cost-1", start, "S-COST-2", "Nomsa", "Door", "Reeded", "6mm", 1800, 500, 2, "Received"]);
++  book.getSheetByName("Backboard_Usage").appendRow([start, "S-COST-2", "Admire", "Assembly", "MDF", "2.5"]);
++  book.getSheetByName("Wood_To_Order").appendRow(["w-cost-1", start, "S-COST-2", "Nomsa", "Door", "Oak", "18mm", 800, 400, 1, "Ordered", 40]);
+   persistWorkbook();
+   fs.writeFileSync(path.join(dir, "glass-pos.json"), JSON.stringify({
+     nextPo: 2,
+@@ -146,7 +158,9 @@ assert.strictEqual(cost.matchTask("Final QC"), "");
+   assert.ok(matOrder, "received glass and powder must open a Cost row");
+   assert.ok(Math.abs(matOrder.glassCost - 125.5) < 0.02, "glass actual " + matOrder.glassCost);
+   assert.ok(Math.abs(matOrder.powderCost - 350) < 0.02, "powder actual " + matOrder.powderCost);
+-  assert.ok(matOrder.materialCost >= 475);
++  assert.ok(Math.abs(matOrder.woodCost - 40) < 0.02, "wood " + matOrder.woodCost);
++  assert.ok(Math.abs(matOrder.materialCost - 515.5) < 0.02, "one materials total " + matOrder.materialCost);
++  assert.ok((matOrder.materialEntries || []).some((e) => e.type === "backboard"));
+   assert.ok(!(matOrder.materialEntries || []).some((e) => e.type === "glass" && Math.abs((e.cost || 0) - 810) < 0.02), "glass estimates must not land on Cost");
+ 
+   const refuseSteel = await fetch(base + "/api/office/steel-usage/clear", {
+diff --git a/studio-delta-production/server/workbook-store.js b/studio-delta-production/server/workbook-store.js
+index c8d8cf1..5bec40a 100644
+--- a/studio-delta-production/server/workbook-store.js
++++ b/studio-delta-production/server/workbook-store.js
+@@ -18,7 +18,7 @@ const SEED_TABS = {
+     "Pause Start", "Pause Mins", "Pause Reason", "Meta"
+   ]],
+   Overview: [["ID", "Order #", "Worker", "Status", "Start", "End", "Duration"]],
+-  Rates: [["Process", "Rate"]],
++  Rates: [["Person", "Rate"]],
+   Steel_Profiles: [["Category", "Profile Name"]],
+   Steel_Usage: [["Timestamp", "Order #", "Worker", "Process", "Profile Type", "Size / Length"]],
+   Backboards: [["Category", "Profile Name"]],
