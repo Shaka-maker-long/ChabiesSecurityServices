@@ -10,10 +10,11 @@ export function PageHero({
   photo: Photo;
 }) {
   return (
-    <section className="page-hero">
-      <div className="page-hero-copy">
+    <section className="mast">
+      <div className="mast-copy">
+        <p className="eyebrow">Second Plate</p>
         <h1>{title}</h1>
-        {lede ? <p>{lede}</p> : null}
+        {lede ? <p className="lede">{lede}</p> : null}
       </div>
       <figure>
         <img src={photo.src} alt={photo.alt} width={photo.width} height={photo.height} />

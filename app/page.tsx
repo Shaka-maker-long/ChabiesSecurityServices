@@ -5,21 +5,24 @@ import { events, gallery, offerings, photos, site } from "@/lib/site";
 export default function HomePage() {
   return (
     <>
-      <section className="hero">
-        <div className="hero-copy">
-          <p className="eyebrow">{site.wordmark}</p>
-          <h1>{site.tagline}</h1>
-          <p className="mantra">{site.mantra}</p>
-          <div className="hero-actions">
-            <Link className="btn btn-fill" href="/contact">
-              Get Started
-            </Link>
-            <Link className="btn" href="/about">
-              Discover More
-            </Link>
+      <section className="stage">
+        <div className="stage-copy">
+          <div>
+            <p className="eyebrow">{site.wordmark}</p>
+            <h1>{site.tagline}</h1>
+            <p className="mantra">{site.mantra}</p>
+            <div className="hero-actions">
+              <Link className="btn btn-fill" href="/contact">
+                Get Started
+              </Link>
+              <Link className="btn" href="/about">
+                Discover More
+              </Link>
+            </div>
           </div>
+          <p className="stage-meta">{site.area}</p>
         </div>
-        <figure className="hero-frame">
+        <figure className="stage-photo">
           <img
             src={photos.salmon.src}
             alt={photos.salmon.alt}
@@ -30,14 +33,21 @@ export default function HomePage() {
           {photos.salmon.credit ? <figcaption>{photos.salmon.credit}</figcaption> : null}
         </figure>
       </section>
-      <div className="hero-meta">
-        <span>{site.area}</span>
-        <a href={site.phoneHref}>{site.phoneDisplay}</a>
-        <a href={site.emailHref}>{site.email}</a>
+
+      <div className="ticker" aria-hidden="true">
+        <div className="ticker-track">
+          {Array.from({ length: 2 }).map((_, copy) => (
+            <div className="ticker-group" key={copy}>
+              {Array.from({ length: 4 }).map((__, index) => (
+                <span key={index}>{site.mantra}</span>
+              ))}
+            </div>
+          ))}
+        </div>
       </div>
 
-      <section className="intro" aria-labelledby="about-heading">
-        <div className="intro-copy">
+      <section className="split" aria-labelledby="about-heading">
+        <div className="split-copy">
           <p className="eyebrow">Second Plate</p>
           <h2 id="about-heading">About Us</h2>
           <p>
@@ -51,48 +61,42 @@ export default function HomePage() {
             Discover More
           </Link>
         </div>
-        <figure className="intro-figure">
+        <figure className="split-photo">
           <img src={photos.plate.src} alt={photos.plate.alt} width={photos.plate.width} height={photos.plate.height} />
         </figure>
       </section>
 
-      <section className="offerings" aria-labelledby="offerings-heading">
-        <div className="section-head">
+      <section className="chapter" aria-labelledby="offerings-heading">
+        <div className="chapter-head">
           <p className="eyebrow">Classes and catering</p>
           <h2 id="offerings-heading">Exquisite Catering Creations</h2>
         </div>
-        <div className="offering-grid">
-          {offerings.map((item) => (
-            <article className="offering" key={item.index}>
-              <figure>
-                <img
-                  src={item.photo.src}
-                  alt={item.photo.alt}
-                  width={item.photo.width}
-                  height={item.photo.height}
-                />
-                {"credit" in item.photo && item.photo.credit ? <figcaption>{item.photo.credit}</figcaption> : null}
-              </figure>
-              <div className="offering-copy">
-                <p className="index">{item.index}</p>
-                <h3>{item.title}</h3>
-                <p>{item.text}</p>
-              </div>
-            </article>
-          ))}
-        </div>
+        {offerings.map((item) => (
+          <article className={Number(item.index) % 2 === 0 ? "band-row is-flip" : "band-row"} key={item.index}>
+            <figure>
+              <img src={item.photo.src} alt={item.photo.alt} width={item.photo.width} height={item.photo.height} />
+            </figure>
+            <div className="band-copy">
+              <p className="index">{item.index}</p>
+              <h3>{item.title}</h3>
+              <p>{item.text}</p>
+              {"credit" in item.photo && item.photo.credit ? <p className="photo-credit">{item.photo.credit}</p> : null}
+            </div>
+          </article>
+        ))}
       </section>
 
-      <section className="band">
-        <img src={photos.wings.src} alt="" width={photos.wings.width} height={photos.wings.height} />
-        <div className="scrim" />
+      <section className="statement">
+        <figure>
+          <img src={photos.wings.src} alt={photos.wings.alt} width={photos.wings.width} height={photos.wings.height} />
+        </figure>
         <blockquote>
           <p>Modern South African-inspired dishes, crafted with passion and expertise.</p>
         </blockquote>
       </section>
 
-      <section className="gallery-section" aria-labelledby="gallery-heading">
-        <div className="section-head">
+      <section className="chapter" aria-labelledby="gallery-heading">
+        <div className="chapter-head">
           <p className="eyebrow">Photography</p>
           <h2 id="gallery-heading">Gallery</h2>
         </div>
@@ -106,25 +110,31 @@ export default function HomePage() {
         </div>
       </section>
 
-      <section className="events-tease" aria-labelledby="events-heading">
-        <div>
-          <p className="eyebrow">Events</p>
-          <h2 id="events-heading">No events at the moment</h2>
-          <p>
-            The classes Second Plate has published are listed here, with registration closed. Each one was held in
-            Polokwane.
-          </p>
-          <Link className="text-link" href="/events">
-            View the classes
-          </Link>
+      <section className="chapter" aria-labelledby="events-heading">
+        <div className="chapter-head chapter-head-wide">
+          <div>
+            <p className="eyebrow">Events</p>
+            <h2 id="events-heading">No events at the moment</h2>
+          </div>
+          <div>
+            <p>
+              The classes Second Plate has published are listed here, with registration closed. Each one was held in
+              Polokwane.
+            </p>
+            <Link className="text-link" href="/events">
+              View the classes
+            </Link>
+          </div>
         </div>
-        <ol>
-          {events.slice(0, 3).map((event) => (
+        <ol className="board">
+          {events.map((event) => (
             <li key={event.slug}>
               <Link href={`/events/${event.slug}`}>
-                <span>{event.shortDate}</span>
+                <span className="board-date">{event.shortDate}</span>
                 <strong>{event.title}</strong>
-                <em>{event.city}</em>
+                <span className="board-city">{event.city}</span>
+                <span className="board-status">Registration closed</span>
+                <img src={event.image} alt="" width={event.width} height={event.height} />
               </Link>
             </li>
           ))}
@@ -133,15 +143,26 @@ export default function HomePage() {
 
       <section className="journal" aria-labelledby="journal-heading">
         <p className="eyebrow">Our Blog</p>
-        <h2 id="journal-heading">Check back soon</h2>
-        <p>Once posts are published, you’ll see them here.</p>
+        <div>
+          <h2 id="journal-heading">Check back soon</h2>
+          <p>Once posts are published, you’ll see them here.</p>
+        </div>
         <Link className="text-link" href="/blog">
           View All Posts
         </Link>
       </section>
 
-      <section className="contact-band" aria-labelledby="connect-heading">
-        <div className="contact-copy">
+      <section className="connect" aria-labelledby="connect-heading">
+        <figure className="connect-photo">
+          <img
+            src={photos.cocktails.src}
+            alt={photos.cocktails.alt}
+            width={photos.cocktails.width}
+            height={photos.cocktails.height}
+          />
+          {photos.cocktails.credit ? <figcaption>{photos.cocktails.credit}</figcaption> : null}
+        </figure>
+        <div className="connect-panel">
           <p className="eyebrow">Connect with Us</p>
           <h2 id="connect-heading">Connect with Us</h2>
           <p>
@@ -154,8 +175,8 @@ export default function HomePage() {
             <span>{site.area}</span>
             <a href={site.mapsHref}>{site.address}</a>
           </address>
+          <ContactForm />
         </div>
-        <ContactForm />
       </section>
     </>
   );

@@ -1,11 +1,11 @@
 import type { Metadata } from "next";
-import { Outfit, Syne } from "next/font/google";
+import { Outfit, Unbounded } from "next/font/google";
 import { Footer } from "@/components/Footer";
 import { Header } from "@/components/Header";
 import { site } from "@/lib/site";
 import "./globals.css";
 
-const display = Syne({
+const display = Unbounded({
   subsets: ["latin"],
   variable: "--font-display",
   display: "swap",
