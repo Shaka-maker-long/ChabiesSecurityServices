@@ -11,13 +11,14 @@ export function PageHero({
 }) {
   return (
     <section className="page-hero">
-      <img src={photo.src} alt={photo.alt} width={photo.width} height={photo.height} />
-      <div className="scrim" />
       <div className="page-hero-copy">
         <h1>{title}</h1>
         {lede ? <p>{lede}</p> : null}
-        {photo.credit ? <p className="photo-credit">{photo.credit}</p> : null}
       </div>
+      <figure>
+        <img src={photo.src} alt={photo.alt} width={photo.width} height={photo.height} />
+        {photo.credit ? <figcaption>{photo.credit}</figcaption> : null}
+      </figure>
     </section>
   );
 }

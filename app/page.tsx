@@ -6,14 +6,6 @@ export default function HomePage() {
   return (
     <>
       <section className="hero">
-        <img
-          src={photos.salmon.src}
-          alt={photos.salmon.alt}
-          width={photos.salmon.width}
-          height={photos.salmon.height}
-          fetchPriority="high"
-        />
-        <div className="scrim" />
         <div className="hero-copy">
           <p className="eyebrow">{site.wordmark}</p>
           <h1>{site.tagline}</h1>
@@ -26,9 +18,23 @@ export default function HomePage() {
               Discover More
             </Link>
           </div>
-          {photos.salmon.credit ? <p className="photo-credit">{photos.salmon.credit}</p> : null}
         </div>
+        <figure className="hero-frame">
+          <img
+            src={photos.salmon.src}
+            alt={photos.salmon.alt}
+            width={photos.salmon.width}
+            height={photos.salmon.height}
+            fetchPriority="high"
+          />
+          {photos.salmon.credit ? <figcaption>{photos.salmon.credit}</figcaption> : null}
+        </figure>
       </section>
+      <div className="hero-meta">
+        <span>{site.area}</span>
+        <a href={site.phoneHref}>{site.phoneDisplay}</a>
+        <a href={site.emailHref}>{site.email}</a>
+      </div>
 
       <section className="intro" aria-labelledby="about-heading">
         <div className="intro-copy">
@@ -55,24 +61,26 @@ export default function HomePage() {
           <p className="eyebrow">Classes and catering</p>
           <h2 id="offerings-heading">Exquisite Catering Creations</h2>
         </div>
-        {offerings.map((item) => (
-          <article className="offering" key={item.index}>
-            <figure>
-              <img
-                src={item.photo.src}
-                alt={item.photo.alt}
-                width={item.photo.width}
-                height={item.photo.height}
-              />
-              {"credit" in item.photo && item.photo.credit ? <figcaption>{item.photo.credit}</figcaption> : null}
-            </figure>
-            <div className="offering-copy">
-              <p className="index">{item.index}</p>
-              <h3>{item.title}</h3>
-              <p>{item.text}</p>
-            </div>
-          </article>
-        ))}
+        <div className="offering-grid">
+          {offerings.map((item) => (
+            <article className="offering" key={item.index}>
+              <figure>
+                <img
+                  src={item.photo.src}
+                  alt={item.photo.alt}
+                  width={item.photo.width}
+                  height={item.photo.height}
+                />
+                {"credit" in item.photo && item.photo.credit ? <figcaption>{item.photo.credit}</figcaption> : null}
+              </figure>
+              <div className="offering-copy">
+                <p className="index">{item.index}</p>
+                <h3>{item.title}</h3>
+                <p>{item.text}</p>
+              </div>
+            </article>
+          ))}
+        </div>
       </section>
 
       <section className="band">
