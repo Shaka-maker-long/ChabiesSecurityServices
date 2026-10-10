@@ -739,7 +739,7 @@ h1, h2, h3 { text-wrap: balance; }
     align-items: flex-start;
     justify-content: flex-start;
     padding: 1.2rem 7vw 2rem;
-    background: rgba(5, 4, 5, 0.98);
+    background: #050405;
     overflow: auto;
   }
 
@@ -777,9 +777,19 @@ h1, h2, h3 { text-wrap: balance; }
     min-height: 42vw;
   }
   .mosaic figure:nth-child(3) { grid-column: 1 / -1; min-height: 52vw; }
-  .board a, .event-index a { grid-template-columns: 4.6rem 1fr; }
-  .board-city, .board-status { grid-column: 2; }
-  .board img { grid-column: 1; grid-row: 1 / span 4; }
+  .board a, .event-index a { grid-template-columns: 5.2rem 1fr; }
+  .board-date { grid-column: 2; grid-row: 1; }
+  .board strong { grid-column: 2; grid-row: 2; }
+  .board-city { grid-column: 2; grid-row: 3; }
+  .board-status { grid-column: 2; grid-row: 4; }
+  .board img {
+    grid-column: 1;
+    grid-row: 1 / -1;
+    width: 5.2rem;
+    height: 5.2rem;
+    align-self: center;
+  }
+  .event-index img { width: 5.2rem; height: 5.2rem; }
   .journal { align-items: start; }
   .connect-photo { min-height: 52svh; }
   .event-layout figure { position: static; }
@@ -789,7 +799,9 @@ h1, h2, h3 { text-wrap: balance; }
 @media (max-width: 640px) {
   .hero-actions { flex-direction: column; align-items: stretch; }
   .stage h1 { max-width: none; font-size: clamp(2.2rem, 11vw, 3rem); }
-  .board a { grid-template-columns: 4.2rem 1fr; }
+  .board a, .event-index a { grid-template-columns: 4.6rem 1fr; }
+  .board img { width: 4.6rem; height: 4.6rem; }
+  .event-index img { width: 4.6rem; height: 4.6rem; }
 }
 
 @media (prefers-reduced-motion: reduce) {
