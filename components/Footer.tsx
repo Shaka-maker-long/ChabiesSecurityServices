@@ -5,7 +5,7 @@ export function Footer() {
   return (
     <footer className="site-footer">
       <div className="footer-brand">
-        <img src="/images/logo.png" alt="Second Plate" width={1422} height={386} />
+        <img src="/images/logo.png" alt="Second Plate" width={1271} height={210} />
         <p>{site.mantra}</p>
       </div>
       <div className="footer-col">

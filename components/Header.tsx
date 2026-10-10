@@ -25,7 +25,7 @@ export function Header() {
       </a>
       <div className="header-inner">
         <Link href="/" className="logo-link" aria-label="Second Plate, home">
-          <img src="/images/logo.png" alt="" width={1422} height={386} />
+          <img src="/images/logo.png" alt="" width={1271} height={210} />
         </Link>
         <button
           type="button"
